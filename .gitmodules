@@ -1,0 +1,3 @@
+[submodule "libs/open-clip"]
+	path = libs/open-clip
+	url = https://github.com/MatteoMorellini/firefly-clip

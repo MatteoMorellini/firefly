@@ -4,4 +4,9 @@ version = "0.1.0"
 description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.13"
-dependencies = []
+dependencies = [
+    "open-clip-torch",
+]
+
+[tool.uv.sources]
+open-clip-torch = { path = "libs/open-clip", editable = true }
