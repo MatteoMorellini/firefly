@@ -1,3 +1,6 @@
 [submodule "libs/open-clip"]
 	path = libs/open-clip
 	url = https://github.com/MatteoMorellini/firefly-clip
+[submodule "clevr-4"]
+	path = clevr-4
+	url = https://github.com/MatteoMorellini/clevr-4

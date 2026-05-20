@@ -12,3 +12,6 @@ wheels/
 *.out
 *.err
 *.jpg
+data/
+*.json
+*.pt
