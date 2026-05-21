@@ -13,5 +13,5 @@ module purge
 module load CUDA/12.3.2
 module load Python/3.12.3-GCCcore-13.3.0
 
-uv run python main.py --images ./clevr4/images --questions \
-    ./data/test.json --output ./result_lora_100.json --lora runs/20260519_201749_ViT-B-32/best.pt
+uv run python evaluate.py --images ./clevr4/images --questions \
+    ./data/declarations/test.json --output ./result_lora_100.json --lora runs/20260519_201749_ViT-B-32/best.pt

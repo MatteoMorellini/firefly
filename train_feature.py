@@ -28,7 +28,7 @@ from PIL import Image
 from torch.utils.data import DataLoader, Dataset
 from tqdm import tqdm
 
-from generate_statements import (
+from clevr_4.declaration_utils.generate_statements import (
     MATERIAL_TEMPLATES,
     COUNT_TEMPLATES_SINGULAR,
     COUNT_TEMPLATES_PLURAL,
@@ -252,8 +252,10 @@ def main():
     parser.add_argument("--feature", choices=FEATURES, required=True,
                         help="Which scene feature to train on.")
     parser.add_argument("--images", type=Path, default=Path("./images"))
-    parser.add_argument("--statements", type=Path, default=Path("./statements.json"),
-                        help="Output of generate_statements.py")
+    parser.add_argument("--statements", type=Path, default=Path("./train.json"),
+                        help="Training split (output of split.py / generate_statements.py)")
+    parser.add_argument("--eval-statements", type=Path, default=None,
+                        help="Eval split (e.g. eval.json). Defaults to --statements if not set.")
     parser.add_argument("--image-suffix", default=".png",
                         help="File extension to append to the image id.")
     parser.add_argument("--model", default="ViT-B-32")
@@ -312,6 +314,11 @@ def main():
     items = list(data.items())
     if args.limit:
         items = items[: args.limit]
+
+    eval_path = args.eval_statements or args.statements
+    with open(eval_path) as f:
+        eval_data = json.load(f)
+    eval_items = list(eval_data.items())
 
     rng = random.Random(args.seed)
     dataset = FeatureStatementDataset(items, args.feature, args.images, preprocess, rng)
@@ -379,7 +386,7 @@ def main():
 
         if (epoch + 1) % args.eval_every == 0:
             acc = evaluate(
-                model, tokenizer, preprocess, args.device, items,
+                model, tokenizer, preprocess, args.device, eval_items,
                 args.images, args.feature, args.image_suffix,
             )
             msg += f"  eval_acc[{args.feature}]={acc:.2%}"
