@@ -258,7 +258,7 @@ def main():
                         help="Eval split (e.g. eval.json). Defaults to --statements if not set.")
     parser.add_argument("--image-suffix", default=".png",
                         help="File extension to append to the image id.")
-    parser.add_argument("--model", default="ViT-B-32")
+    parser.add_argument("--model", default="ViT-B-32-quickgelu")
     parser.add_argument("--pretrained", default="openai")
     parser.add_argument("--device", default="cuda" if torch.cuda.is_available() else "cpu")
     parser.add_argument("--epochs", type=int, default=5)
@@ -392,6 +392,8 @@ def main():
             msg += f"  eval_acc[{args.feature}]={acc:.2%}"
             model.train()
 
+        torch.save(make_state(), run_dir / f"{epoch + 1}.pt")
+        
         if avg < best_loss:
             best_loss = avg
             torch.save(make_state(), run_dir / "best.pt")
