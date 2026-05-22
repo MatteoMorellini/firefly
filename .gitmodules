@@ -4,3 +4,6 @@
 [submodule "clevr-4"]
 	path = clevr-4
 	url = https://github.com/MatteoMorellini/clevr-4
+[submodule "libs/SITH"]
+	path = libs/SITH
+	url = git@github.com:MatteoMorellini/SITH.git
