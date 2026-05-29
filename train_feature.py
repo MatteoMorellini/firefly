@@ -85,9 +85,15 @@ LORA_TARGETS = ("out_proj", "c_fc", "c_proj")
 
 
 def inject_lora(model: nn.Module, r: int, alpha: float, dropout: float):
+    # Image encoder only: the text encoder stays frozen so the image tower
+    # aligns to the original CLIP joint space the SITH dictionary lives in,
+    # and so decompose.py (which merges only ``visual.`` deltas) sees every
+    # trained module.
     n_replaced = 0
     targets = []
-    for _, module in model.named_modules():
+    for name, module in model.named_modules():
+        if not (name == "visual" or name.startswith("visual.")):
+            continue
         for child_name, child in module.named_children():
             if not isinstance(child, nn.Linear):
                 continue

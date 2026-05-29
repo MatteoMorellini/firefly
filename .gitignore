@@ -17,3 +17,4 @@ data/
 *.pt
 clevr_4/
 runs/
+*.sh
