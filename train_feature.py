@@ -24,21 +24,19 @@ import open_clip
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+from clevr_4.declaration_utils.generate_statements import (
+    COLOR_TEMPLATES_PLURAL,
+    COLOR_TEMPLATES_SINGULAR,
+    COUNT_TEMPLATES_PLURAL,
+    COUNT_TEMPLATES_SINGULAR,
+    MATERIAL_TEMPLATES,
+    SHAPE_TEMPLATES_PLURAL,
+    SHAPE_TEMPLATES_SINGULAR,
+    pluralize,
+)
 from PIL import Image
 from torch.utils.data import DataLoader, Dataset
 from tqdm import tqdm
-
-from clevr_4.declaration_utils.generate_statements import (
-    MATERIAL_TEMPLATES,
-    COUNT_TEMPLATES_SINGULAR,
-    COUNT_TEMPLATES_PLURAL,
-    SHAPE_TEMPLATES_SINGULAR,
-    SHAPE_TEMPLATES_PLURAL,
-    COLOR_TEMPLATES_SINGULAR,
-    COLOR_TEMPLATES_PLURAL,
-    pluralize,
-)
-
 
 FEATURES = ("color", "shape", "material", "count")
 
@@ -149,9 +147,41 @@ def collate(batch, tokenizer):
 # ---------------------------------------------------------------------------
 
 
-COLORS = ["blue", "brown", "cyan", "gray", "green", "orange", "pink", "purple", "red", "yellow"]
-SHAPES = ["cone", "cube", "cylinder", "diamond", "gear", "monkey", "sphere", "star", "teapot", "torus"]
-MATERIALS = ["brick", "checkered", "chessboard", "circles", "emojis", "metal", "rubber", "wave", "zigzag"]
+COLORS = [
+    "blue",
+    "brown",
+    "cyan",
+    "gray",
+    "green",
+    "orange",
+    "pink",
+    "purple",
+    "red",
+    "yellow",
+]
+SHAPES = [
+    "cone",
+    "cube",
+    "cylinder",
+    "diamond",
+    "gear",
+    "monkey",
+    "sphere",
+    "star",
+    "teapot",
+    "torus",
+]
+MATERIALS = [
+    "brick",
+    "checkered",
+    "chessboard",
+    "circles",
+    "emojis",
+    "metal",
+    "rubber",
+    "wave",
+    "zigzag",
+]
 COUNTS = list(range(1, 11))
 
 
@@ -177,7 +207,9 @@ def render(feature: str, value, count: int) -> str:
     if feature == "shape":
         if count == 1:
             return SHAPE_TEMPLATES_SINGULAR[0].format(shape=value)
-        return SHAPE_TEMPLATES_PLURAL[0].format(shape=value, shape_plural=pluralize(value))
+        return SHAPE_TEMPLATES_PLURAL[0].format(
+            shape=value, shape_plural=pluralize(value)
+        )
     if feature == "color":
         pool = COLOR_TEMPLATES_SINGULAR if count == 1 else COLOR_TEMPLATES_PLURAL
         return pool[0].format(color=value)
@@ -205,8 +237,17 @@ class FeatureEvalDataset(Dataset):
 
 
 @torch.no_grad()
-def evaluate(model, tokenizer, preprocess, device, items, image_dir,
-             feature, image_suffix, batch_size=64):
+def evaluate(
+    model,
+    tokenizer,
+    preprocess,
+    device,
+    items,
+    image_dir,
+    feature,
+    image_suffix,
+    batch_size=64,
+):
     model.eval()
     dataset = FeatureEvalDataset(items, feature, image_dir, preprocess, image_suffix)
     loader = DataLoader(dataset, batch_size=batch_size, shuffle=False, num_workers=2)
@@ -249,20 +290,37 @@ def contrastive_loss(image_features, text_features, logit_scale):
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--feature", choices=FEATURES, required=True,
-                        help="Which scene feature to train on.")
+    parser.add_argument(
+        "--feature",
+        choices=FEATURES,
+        required=True,
+        help="Which scene feature to train on.",
+    )
     parser.add_argument("--images", type=Path, default=Path("./images"))
-    parser.add_argument("--statements", type=Path, default=Path("./train.json"),
-                        help="Training split (output of split.py / generate_statements.py)")
-    parser.add_argument("--eval-statements", type=Path, default=None,
-                        help="Eval split (e.g. eval.json). Defaults to --statements if not set.")
-    parser.add_argument("--image-suffix", default=".png",
-                        help="File extension to append to the image id.")
-    parser.add_argument("--model", default="ViT-B-32-quickgelu")
-    parser.add_argument("--pretrained", default="openai")
-    parser.add_argument("--device", default="cuda" if torch.cuda.is_available() else "cpu")
+    parser.add_argument(
+        "--statements",
+        type=Path,
+        default=Path("./train.json"),
+        help="Training split (output of split.py / generate_statements.py)",
+    )
+    parser.add_argument(
+        "--eval-statements",
+        type=Path,
+        default=None,
+        help="Eval split (e.g. eval.json). Defaults to --statements if not set.",
+    )
+    parser.add_argument(
+        "--image-suffix",
+        default=".png",
+        help="File extension to append to the image id.",
+    )
+    parser.add_argument("--model", default="ViT-L-14")
+    parser.add_argument("--pretrained", default="laion2b_s32b_b82k")
+    parser.add_argument(
+        "--device", default="cuda" if torch.cuda.is_available() else "cpu"
+    )
     parser.add_argument("--epochs", type=int, default=5)
-    parser.add_argument("--batch-size", type=int, default=128)
+    parser.add_argument("--batch-size", type=int, default=32)
     parser.add_argument("--lr", type=float, default=1e-4)
     parser.add_argument("--weight-decay", type=float, default=0.01)
     parser.add_argument("--lora-r", type=int, default=8)
@@ -274,6 +332,12 @@ def main():
     parser.add_argument("--amp", action="store_true")
     parser.add_argument("--runs-dir", type=Path, default=Path("./runs"))
     parser.add_argument("--eval-every", type=int, default=5)
+    parser.add_argument(
+        "--eval-every-steps",
+        type=int,
+        default=0,
+        help="If > 0, also run evaluation every N training steps within an epoch.",
+    )
     args = parser.parse_args()
 
     random.seed(args.seed)
@@ -307,7 +371,9 @@ def main():
     n_train = sum(p.numel() for p in trainable)
     n_total = sum(p.numel() for p in model.parameters())
     print(f"injected LoRA into {n_lora} linear modules")
-    print(f"trainable params: {n_train:,} / {n_total:,} ({100 * n_train / n_total:.2f}%)")
+    print(
+        f"trainable params: {n_train:,} / {n_total:,} ({100 * n_train / n_total:.2f}%)"
+    )
 
     with open(args.statements) as f:
         data = json.load(f)
@@ -353,8 +419,39 @@ def main():
             },
         }
 
+    train_log = open(run_dir / "train_log.jsonl", "a")
+    eval_log = open(run_dir / "eval_log.jsonl", "a")
+
+    def run_eval(epoch: int, step: int, global_step: int):
+        acc = evaluate(
+            model,
+            tokenizer,
+            preprocess,
+            args.device,
+            eval_items,
+            args.images,
+            args.feature,
+            args.image_suffix,
+        )
+        eval_log.write(
+            json.dumps(
+                {
+                    "epoch": epoch,
+                    "step": step,
+                    "global_step": global_step,
+                    "feature": args.feature,
+                    "accuracy": acc,
+                }
+            )
+            + "\n"
+        )
+        eval_log.flush()
+        model.train()
+        return acc
+
     model.train()
     best_loss = float("inf")
+    global_step = 0
     for epoch in range(args.epochs):
         running = 0.0
         pbar = tqdm(loader, desc=f"epoch {epoch + 1}/{args.epochs}", miniters=5)
@@ -374,9 +471,31 @@ def main():
             scaler.update()
             scheduler.step()
 
-            running += loss.item()
+            global_step += 1
+            loss_val = loss.item()
+            running += loss_val
+            train_log.write(
+                json.dumps(
+                    {
+                        "epoch": epoch + 1,
+                        "step": step,
+                        "global_step": global_step,
+                        "loss": loss_val,
+                        "lr": scheduler.get_last_lr()[0],
+                        "logit_scale": model.logit_scale.exp().item(),
+                    }
+                )
+                + "\n"
+            )
+            train_log.flush()
             if step % 5 == 0:
-                pbar.set_postfix(loss=f"{loss.item():.4f}")
+                pbar.set_postfix(loss=f"{loss_val:.4f}")
+
+            if args.eval_every_steps > 0 and global_step % args.eval_every_steps == 0:
+                acc = run_eval(epoch + 1, step, global_step)
+                pbar.write(
+                    f"  step {global_step}: eval_acc[{args.feature}]={acc:.2%}"
+                )
 
         avg = running / max(1, len(loader))
         msg = (
@@ -384,16 +503,11 @@ def main():
             f"logit_scale={model.logit_scale.exp().item():.2f}"
         )
 
-        if (epoch + 1) % args.eval_every == 0:
-            acc = evaluate(
-                model, tokenizer, preprocess, args.device, eval_items,
-                args.images, args.feature, args.image_suffix,
-            )
-            msg += f"  eval_acc[{args.feature}]={acc:.2%}"
-            model.train()
+        acc = run_eval(epoch + 1, len(loader), global_step)
+        msg += f"  eval_acc[{args.feature}]={acc:.2%}"
 
         torch.save(make_state(), run_dir / f"{epoch + 1}.pt")
-        
+
         if avg < best_loss:
             best_loss = avg
             torch.save(make_state(), run_dir / "best.pt")
@@ -401,9 +515,14 @@ def main():
 
         print(msg)
 
+    train_log.close()
+    eval_log.close()
+
     torch.save(make_state(), run_dir / "last.pt")
     n_lora_params = sum(v.numel() for v in lora_state_dict(model).values())
-    print(f"best loss={best_loss:.4f}  run dir: {run_dir}  ({n_lora_params:,} LoRA params)")
+    print(
+        f"best loss={best_loss:.4f}  run dir: {run_dir}  ({n_lora_params:,} LoRA params)"
+    )
 
 
 if __name__ == "__main__":

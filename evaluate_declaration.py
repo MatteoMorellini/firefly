@@ -29,8 +29,8 @@ def main():
     parser.add_argument("--image-suffix", default=".png")
     parser.add_argument("--split", default=None,
                         help="If set, only evaluate scenes with this split value.")
-    parser.add_argument("--model", default="ViT-B-32-quickgelu")
-    parser.add_argument("--pretrained", default="openai")
+    parser.add_argument("--model", default="ViT-L-14")
+    parser.add_argument("--pretrained", default="laion2b_s32b_b82k")
     parser.add_argument("--device", default="cuda" if torch.cuda.is_available() else "cpu")
     parser.add_argument("--limit", type=int, default=None)
     parser.add_argument("--output", type=Path, default=Path("./results.json"))

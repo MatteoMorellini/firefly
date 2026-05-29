@@ -16,3 +16,4 @@ data/
 *.json
 *.pt
 clevr_4/
+runs/
