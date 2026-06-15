@@ -14,4 +14,4 @@ module load CUDA/12.3.2
 module load Python/3.12.3-GCCcore-13.3.0
 
 uv run python evaluate_declaration.py --images ./clevr_4/images --statements \
-    ./data/declarations/test.json --output ./result_lora_count_5.json --lora runs/ViT-L-14_count/5.pt
+    ./data/declarations/test.json --output ./result_lora_count_5.json --lora runs/ViT-L-14_material/50.pt

@@ -18,3 +18,4 @@ data/
 clevr_4/
 runs/
 *.sh
+results/

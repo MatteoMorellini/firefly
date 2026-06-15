@@ -508,9 +508,9 @@ def main():
             f"epoch {epoch + 1}/{args.epochs}  loss={avg:.4f}  "
             f"logit_scale={model.logit_scale.exp().item():.2f}"
         )
-
-        acc = run_eval(epoch + 1, len(loader), global_step)
-        msg += f"  eval_acc[{args.feature}]={acc:.2%}"
+        if epoch % args.eval_every == 0 or epoch == args.epochs - 1:
+            acc = run_eval(epoch + 1, len(loader), global_step)
+            msg += f"  eval_acc[{args.feature}]={acc:.2%}"
 
         torch.save(make_state(), run_dir / f"{epoch + 1}.pt")
 
