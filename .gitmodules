@@ -7,3 +7,6 @@
 [submodule "libs/SITH"]
 	path = libs/SITH
 	url = git@github.com:MatteoMorellini/SITH.git
+[submodule "libs/sae-for-vlm"]
+	path = libs/sae-for-vlm
+	url = https://github.com/ExplainableML/sae-for-vlm
